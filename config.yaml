@@ -2,20 +2,20 @@
 
 server:
   host: "0.0.0.0"
-  port: 8000
+  port: 8008
   debug: true
 
-# Models configuration (Provider agnostic: OpenAI, Ollama, Gemini, Anthropic, vLLM)
+# Models configuration (Provider agnostic: Google Gemini, Groq, OpenAI, Anthropic, DeepSeek, Ollama)
 models:
   # Fast, cheap model used for noise extraction and prompt distillation
-  distillation_model: "gemini/gemini-1.5-flash"
+  distillation_model: "gemini/gemini-3.6-flash"
   
   # Heavy reasoning model used for final task execution
-  execution_model: "gemini/gemini-1.5-pro"
+  execution_model: "gemini/gemini-3.6-flash"
   
-  # Alternative local options (uncomment to use local Ollama / vLLM):
+  # Alternative local options:
   # distillation_model: "ollama/qwen2.5:1.5b"
-  # execution_model: "ollama/qwen2.5:32b"
+  # execution_model: "ollama/qwen2.5:1.5b"
 
 # Settings for token optimization and distillation
 distillation:

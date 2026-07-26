@@ -76,7 +76,7 @@ When users prompt in foreign scripts (such as **Russian Cyrillic**), the problem
 
 ## 🖥️ Web UI Preview
 
-The included Web Dashboard (`http://localhost:8000`) lets you test raw prompts live, view extracted constraints, and inspect real-time token compression:
+The included Web Dashboard (`http://localhost:8008`) lets you test raw prompts live, view extracted constraints, and inspect real-time token compression:
 
 * **Raw Input:** Paste messy Russian transcripts or select built-in presets (Film Lab Scanner Troubleshooting, Homelab Cluster Debugging, Client Email Drafting).
 * **Live Stats Banner:** Visualizes raw token count vs distilled token count and percentage saved.
@@ -100,7 +100,7 @@ export GEMINI_API_KEY="your-api-key"
 docker-compose up -d
 ```
 
-Access the Web UI at **`http://localhost:8000`**.
+Access the Web UI at **`http://localhost:8008`**.
 
 ### Option 2: Local Python Installation
 

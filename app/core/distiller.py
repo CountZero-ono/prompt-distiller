@@ -1,7 +1,7 @@
 import json
 import logging
-from typing import Dict, Any, Tuple
-from app.core.models import LLMClient
+from typing import Dict, Any, Tuple, Optional
+from app.core.models import LLMClient, MODEL_REGISTRY
 
 logger = logging.getLogger("prompt_distiller.distiller")
 
@@ -34,11 +34,8 @@ Maintain bullet points, step-by-step instructions, and technical clarity. Strip 
 class PromptDistiller:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        distill_model_name = config.get("models", {}).get("distillation_model", "gemini/gemini-1.5-flash")
-        exec_model_name = config.get("models", {}).get("execution_model", "gemini/gemini-1.5-pro")
-        
-        self.distiller_client = LLMClient(model_name=distill_model_name)
-        self.executor_client = LLMClient(model_name=exec_model_name)
+        self.default_distill_model = config.get("models", {}).get("distillation_model", "gemini/gemini-3.6-flash")
+        self.default_exec_model = config.get("models", {}).get("execution_model", "gemini/gemini-3.6-flash")
 
     def estimate_tokens(self, text: str) -> int:
         """
@@ -50,15 +47,48 @@ class PromptDistiller:
             return int(len(words) * 2.5) + 5
         return int(len(words) * 1.3) + 2
 
-    async def process(self, raw_prompt: str, target_language: str = "ru") -> Dict[str, Any]:
+    async def process(
+        self,
+        raw_prompt: str,
+        target_language: str = "ru",
+        distillation_model: Optional[str] = None,
+        execution_model: Optional[str] = None,
+        api_key: Optional[str] = None,
+        provider: Optional[str] = None,
+        api_base: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Full 4-phase pipeline execution:
         Raw Input -> Distilled English Prompt -> Execution Model -> Target Language Output
         """
+        if provider and provider in MODEL_REGISTRY:
+            p_info = MODEL_REGISTRY[provider]
+            fallback_distill = p_info.get("distillation_default", self.default_distill_model)
+            fallback_exec = p_info.get("execution_default", self.default_exec_model)
+        else:
+            fallback_distill = self.default_distill_model
+            fallback_exec = self.default_exec_model
+
+        distill_model_name = distillation_model or fallback_distill
+        exec_model_name = execution_model or fallback_exec
+
+        distiller_client = LLMClient(
+            model_name=distill_model_name,
+            api_key=api_key,
+            provider=provider,
+            api_base=api_base
+        )
+        executor_client = LLMClient(
+            model_name=exec_model_name,
+            api_key=api_key,
+            provider=provider,
+            api_base=api_base
+        )
+
         raw_tokens = self.estimate_tokens(raw_prompt)
         
         # Phase 1 & 2: Distill & Extract
-        distill_response_raw = await self.distiller_client.generate(
+        distill_response_raw = await distiller_client.generate(
             system_prompt=DISTILLATION_SYSTEM_PROMPT,
             user_prompt=raw_prompt,
             response_format="json"
@@ -67,7 +97,6 @@ class PromptDistiller:
         try:
             distillation_result = json.loads(distill_response_raw)
         except Exception:
-            # Fallback if json parse fails
             distillation_result = {
                 "detected_language": "Auto/Russian",
                 "raw_input_summary": raw_prompt[:100],
@@ -91,7 +120,7 @@ class PromptDistiller:
             "You are a highly capable AI assistant. Answer the following distilled task cleanly, "
             "accurately, and directly without fluff."
         )
-        raw_execution_response = await self.executor_client.generate(
+        raw_execution_response = await executor_client.generate(
             system_prompt=execution_system_prompt,
             user_prompt=distilled_prompt
         )
@@ -102,7 +131,7 @@ class PromptDistiller:
         else:
             target_lang_name = target_language
 
-        final_response = await self.executor_client.generate(
+        final_response = await executor_client.generate(
             system_prompt=RESPONSE_TRANSLATION_SYSTEM_PROMPT.format(target_lang=target_lang_name),
             user_prompt=raw_execution_response
         )
