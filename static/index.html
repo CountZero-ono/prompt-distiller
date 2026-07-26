@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Distiller & Gateway | AI Noise Reduction Engine</title>
+    <meta name="description" content="Model-agnostic prompt distillation gateway that strips conversational noise, optimizes token budgets, and formats structured LLM answers.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="glow-bg"></div>
+    
+    <header class="app-header">
+        <div class="header-container">
+            <div class="brand">
+                <div class="logo-icon">⚡</div>
+                <div>
+                    <h1>Prompt Distiller <span class="badge">Engine v1.0</span></h1>
+                    <p class="subtitle">Intelligent Noise-Reduction & Token Optimization Gateway</p>
+                </div>
+            </div>
+            <div class="status-indicator">
+                <span class="pulse-dot"></span>
+                <span>System Ready</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Control Panel / Input Section -->
+        <section class="panel input-panel">
+            <div class="panel-header">
+                <h2>1. Raw Input</h2>
+                <div class="input-actions">
+                    <span class="hint">Paste messy text or select a preset</span>
+                </div>
+            </div>
+            
+            <div class="presets-container">
+                <span class="preset-label">Quick Presets:</span>
+                <button class="preset-btn" onclick="loadPreset('russian_voice')">🎙️ Russian Voice Note (Film Lab)</button>
+                <button class="preset-btn" onclick="loadPreset('rambling_homelab')">💻 Messy Homelab Query</button>
+                <button class="preset-btn" onclick="loadPreset('client_email')">📧 Chaotic Client Email Draft</button>
+            </div>
+
+            <div class="textarea-wrapper">
+                <textarea id="rawPromptInput" placeholder="Paste raw, messy, rambling prompt in Russian or any language here... e.g. 'Слушай, у меня тут проблема...'" rows="6"></textarea>
+            </div>
+
+            <div class="controls-row">
+                <div class="control-group">
+                    <label for="targetLangSelect">Output Language:</label>
+                    <select id="targetLangSelect">
+                        <option value="ru" selected>Russian (Русский)</option>
+                        <option value="en">English</option>
+                        <option value="auto">Auto-Detect</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="modelSelect">Execution Model:</label>
+                    <select id="modelSelect">
+                        <option value="gemini/gemini-1.5-pro">Gemini 1.5 Pro (Cloud)</option>
+                        <option value="ollama/qwen2.5:32b">Local Qwen 35B (Offline)</option>
+                        <option value="openai/gpt-4o">GPT-4o</option>
+                    </select>
+                </div>
+
+                <button id="processBtn" class="btn btn-primary" onclick="processPrompt()">
+                    <span>⚡ Distill & Execute</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Pipeline Stats Banner -->
+        <section id="statsBanner" class="stats-banner hidden">
+            <div class="stat-card">
+                <span class="stat-label">Raw Tokens</span>
+                <span id="statRawTokens" class="stat-value text-warning">0</span>
+            </div>
+            <div class="stat-arrow">➔</div>
+            <div class="stat-card">
+                <span class="stat-label">Distilled Tokens</span>
+                <span id="statDistilledTokens" class="stat-value text-success">0</span>
+            </div>
+            <div class="stat-card highlight">
+                <span class="stat-label">Token Savings</span>
+                <span id="statSavings" class="stat-value text-accent">0%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Detected Intent</span>
+                <span id="statIntent" class="stat-value text-dim">-</span>
+            </div>
+        </section>
+
+        <!-- Output Pipeline Section -->
+        <div class="results-grid">
+            <!-- Distillation View -->
+            <section class="panel output-panel">
+                <div class="panel-header">
+                    <h2>2. Engine Distillation (English)</h2>
+                    <span class="badge badge-success">Optimized</span>
+                </div>
+                <div class="output-box">
+                    <div id="distilledOutput" class="code-view">
+                        <span class="placeholder-text">Distilled English micro-prompt will appear here...</span>
+                    </div>
+                </div>
+                <div class="metadata-box">
+                    <h4>Extracted Constraints:</h4>
+                    <ul id="constraintsList" class="constraints-list">
+                        <li class="placeholder-text">None detected yet</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Final Answer View -->
+            <section class="panel output-panel">
+                <div class="panel-header">
+                    <h2>3. Final Clean Response</h2>
+                    <span class="badge badge-primary">User Language</span>
+                </div>
+                <div class="output-box">
+                    <div id="finalResponseOutput" class="markdown-view">
+                        <span class="placeholder-text">Clean, structured answer will render here...</span>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <p>Prompt Distiller & Gateway Engine • Open-Source Model-Agnostic Infrastructure</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

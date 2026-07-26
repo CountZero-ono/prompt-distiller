@@ -1,0 +1,41 @@
+# Prompt Distiller Configuration File
+
+server:
+  host: "0.0.0.0"
+  port: 8000
+  debug: true
+
+# Models configuration (Provider agnostic: OpenAI, Ollama, Gemini, Anthropic, vLLM)
+models:
+  # Fast, cheap model used for noise extraction and prompt distillation
+  distillation_model: "gemini/gemini-1.5-flash"
+  
+  # Heavy reasoning model used for final task execution
+  execution_model: "gemini/gemini-1.5-pro"
+  
+  # Alternative local options (uncomment to use local Ollama / vLLM):
+  # distillation_model: "ollama/qwen2.5:1.5b"
+  # execution_model: "ollama/qwen2.5:32b"
+
+# Settings for token optimization and distillation
+distillation:
+  translate_to_english_for_reasoning: true
+  auto_detect_language: true
+  default_output_language: "ru"
+  strict_constraint_preservation: true
+  token_savings_tracking: true
+
+# Bot integration settings
+bots:
+  telegram:
+    enabled: false
+    token: "YOUR_TELEGRAM_BOT_TOKEN"
+  signal:
+    enabled: false
+    rest_url: "http://127.0.0.1:8080"
+    account: "+1234567890"
+
+# Whisper ASR for voice notes
+audio:
+  whisper_model: "base"
+  local_whisper: true
