@@ -3,39 +3,82 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
   <img src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/Model--Agnostic-Ollama%20%7C%20Gemini%20%7C%20OpenAI-6f42c1?style=for-the-badge" alt="Model Agnostic" />
+  <img src="https://img.shields.io/badge/MCP-Server-4682B4?style=for-the-badge" alt="MCP Server" />
+  <img src="https://img.shields.io/badge/Local%20AI-Qwen%2035B%20%7C%2027B-6f42c1?style=for-the-badge" alt="Local AI" />
+  <img src="https://img.shields.io/badge/Desktop-Hyprland%20%7C%20GNOME-2496ED?style=for-the-badge" alt="Desktop Ready" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
 </p>
 
-> **Model-agnostic AI middleware gateway that compresses messy human voice notes and rambling prompts into high-potency micro-prompts—slashing token costs by up to 75% while boosting LLM reasoning accuracy.**
+> **Model-agnostic AI middleware gateway and desktop voice dictation engine that compresses messy human speech transcripts and rambling prompts into high-potency micro-prompts—slashing token costs by up to 75% while boosting LLM reasoning accuracy across Antigravity, OpenCode, Kilocode, and Hermes Agent.**
 
 ---
 
 ## 🎯 The Problem
 
-80% of everyday non-technical users interact with LLMs like a chatroom—dumping 500-word voice transcripts, emotional context, etiquette, and rambling multi-topic questions.
+80% of everyday prompt input consists of conversational fluff, emotional context, etiquette, vocal stutters, and rambling multi-topic questions.
 
-When users prompt in foreign scripts (such as **Russian Cyrillic**), the problem compounds drastically:
+When prompting in foreign scripts (such as **Russian Cyrillic**), the problem compounds:
 1. **Cyrillic BPE Token Slaughter:** Byte-Pair Encoding tokenizers split Cyrillic script into **2.5× to 3× more tokens per word** compared to English.
-2. **Context Window Bloat:** Unstructured rambling exhausts context limits in 4–5 messages.
-3. **Reasoning Degradation:** Dense reasoning LLMs spend their energy parsing conversational noise rather than executing the core task.
+2. **STT Dictation Noise:** Voice-to-text input adds speech stutters (*"э-э"*, *"короче"*, *"типа"*, *"новая строка"*, *"um"*, *"uh"*) and missing syntax.
+3. **Context Window Bloat:** Unstructured rambling exhausts context limits in a few messages.
+4. **Reasoning Degradation:** Reasoning LLMs waste context budget parsing conversational noise rather than executing the task.
 
 ---
 
 ## 💡 The Solution
 
-**Prompt Distiller** acts as an intelligent proxy gateway sitting between end-users and reasoning models. It ingests chaotic raw inputs, translates and distills them into a dense 100-token English micro-prompt, executes against your target LLM (local or cloud), and formats the final answer back into the user's native language.
+**Prompt Distiller** acts as an intelligent proxy gateway and OS-level dictation assistant:
+1. **Strips Speech Artifacts & Fillers:** Removes vocal stutters (*"короче"*, *"типа"*, *"э-э"*, *"um"*, *"uh"*) and spoken formatting commands (*"новая строка"* $\rightarrow$ clean structural line breaks).
+2. **Cyrillic-to-English Micro-Prompts:** Translates foreign inputs into dense, precise English prompts, preserving explicit technical constraints and sub-tasks (**50%–75% token budget savings**).
+3. **Hands-Free Desktop Injection:** `Shift+F4` keybind records mic input, transcribes via local Whisper, distills prompt via local Qwen 35B/27B, and types the result directly into your focused agent window without auto-submitting.
+4. **Universal 4-Agent MCP Integration:** Exposes an MCP server for **Google Antigravity**, **OpenCode**, **Kilocode**, and **Hermes Agent**.
+
+---
+
+## 📐 Architecture Overview
+
+### 1. Desktop Voice Dictation Workflow (`Shift+F4`)
+
+```
+┌───────────────────────────┐
+│  Shift+F4 Keybind (Mic)   │
+└─────────────┬─────────────┘
+              │
+              ▼
+┌───────────────────────────┐
+│   pw-record (PipeWire)    │ ──► /tmp/dictate_distill.wav
+└─────────────┬─────────────┘
+              │
+              ▼
+┌───────────────────────────┐
+│  Wyoming Faster-Whisper   │ ──► Raw Transcript ("Слушай короче, проблема с...")
+└─────────────┬─────────────┘
+              │
+              ▼
+┌───────────────────────────┐
+│  Prompt Distiller Engine  │ ──► Local Qwen 3.6 35B / 27B (Port 1235)
+└─────────────┬─────────────┘
+              │
+              ▼
+┌───────────────────────────┐
+│ wtype / xdotool Injector  │ ──► Injects clean English prompt into focused window!
+└───────────────────────────┘     (Antigravity / Hermes / OpenCode / Kilocode)
+```
+
+---
+
+### 2. Multi-Phase Distillation Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      Messy Input (Voice / Russian)                      │
+│                     Messy Input (Voice / Russian STT)                   │
 └─────────────────────────────────────────────────────────────────────────┘
                                      │
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                      Phase 1: Noise Removal                             │
-│       • Strips filler, etiquette, and irrelevant story context          │
+│                     Phase 1: STT & Filler Stripping                     │
+│       • Removes "э-э", "короче", "типа", "um", "uh", "you know"          │
+│       • Converts "новая строка" / "абзац" to clean paragraph breaks     │
 └─────────────────────────────────────────────────────────────────────────┘
                                      │
                                      ▼
@@ -48,117 +91,26 @@ When users prompt in foreign scripts (such as **Russian Cyrillic**), the problem
                                      │
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                     Phase 3: Reasoning LLM Execution                    │
-│       • Routes micro-prompt to target (Ollama, Gemini, OpenAI, Claude)  │
-└─────────────────────────────────────────────────────────────────────────┘
-                                     │
-                                     ▼
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    Phase 4: Response Formatting                         │
-│       • Formats clean, structured response back into native language    │
+│               Phase 3: Agent / Execution Model Routing                  │
+│       • Local Qwen 3.6 35B / 27B, Ollama, llama.cpp, vLLM, Gemini       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ✨ Key Features
+## ✨ Core Capabilities
 
-- ⚡ **Token Budget Optimizer:** Drastically lowers API costs and preserves context window health.
-- 🛡️ **Strict Constraint Preservation:** Guarantees technical limits (word counts, budgets, formats, tools) survive distillation.
-- 🔌 **100% Model Agnostic:** Point to local offline Ollama models (`qwen2.5:32b`, `llama3.2`), local `llama.cpp`, or cloud providers (Gemini 1.5 Pro, GPT-4o, Claude 3.5 Sonnet).
-- 🖥️ **Triple Interface Suite:**
-  - **Modern Web UI:** Dark mode, glassmorphism dashboard with real-time token savings analytics and preset selectors.
-  - **Telegram Bot:** Full text and `.ogg` voice note transcription integration via Whisper ASR.
-  - **Signal Bot:** Native integration with `signal-cli-rest-api` WebSockets.
-- 📦 **Zero-Config Fallback:** Includes built-in offline heuristic evaluation mode for standalone testing before connecting live API keys.
-
----
-
-## 🖥️ Web UI Preview
-
-The included Web Dashboard (`http://localhost:8008`) lets you test raw prompts live, view extracted constraints, and inspect real-time token compression:
-
-* **Raw Input:** Paste messy Russian transcripts or select built-in presets (Film Lab Scanner Troubleshooting, Homelab Cluster Debugging, Client Email Drafting).
-* **Live Stats Banner:** Visualizes raw token count vs distilled token count and percentage saved.
-* **Dual View:** Inspect the distilled English micro-prompt alongside the final re-translated answer.
-
----
-
-## 🚀 Quick Start
-
-### Option 1: Run with Docker Compose (Recommended)
-
-```bash
-# Clone the repository
-git clone https://github.com/CountZero-ono/prompt-distiller.git
-cd prompt-distiller
-
-# Set your API keys (or run offline with local Ollama)
-export GEMINI_API_KEY="your-api-key"
-
-# Launch container
-docker-compose up -d
-```
-
-Access the Web UI at **`http://localhost:8008`**.
-
-### Option 2: Local Python Installation
-
-```bash
-# Clone & enter directory
-git clone https://github.com/CountZero-ono/prompt-distiller.git
-cd prompt-distiller
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start FastAPI Uvicorn server
-python3 -m app.main
-```
-
----
-
-## 🔌 API Reference
-
-### `POST /v1/process`
-
-Process raw prompt text through the distillation engine.
-
-#### Request Payload:
-```json
-{
-  "raw_prompt": "Слушай короче, у меня тут проблема с фотопленкой 120 формата, на кадрах идет белая полоса при сканировании на Epson V850. Подскажи как исправить шаг за шагом?",
-  "target_language": "ru",
-  "model": "gemini/gemini-1.5-pro"
-}
-```
-
-#### Response Payload:
-```json
-{
-  "distillation": {
-    "detected_language": "Russian (ru)",
-    "raw_input_summary": "User asking for troubleshooting steps for white vertical line artifacts on 120 film scanned with Epson V850.",
-    "distilled_prompt": "Provide step-by-step troubleshooting for vertical white line artifacts on 120 format film scans using Epson V850 scanner.",
-    "intent": "technical_support",
-    "extracted_constraints": ["Step-by-step instructions"],
-    "estimated_raw_tokens": 58,
-    "estimated_distilled_tokens": 22,
-    "token_savings_percent": 62.1
-  },
-  "final_response": "**Пошаговая инструкция по устранению белой полосы:**\n\n1. **Очистка калибровочного окна...**"
-}
-```
+- ⚡ **Token Budget Optimizer:** Preserves reasoning LLM context window health by turning 200-word transcripts into 40-word prompts.
+- 🎙️ **Desktop Keybind Dictation (`Shift+F4`):** Types clean distilled prompts into your active editor or terminal without auto-triggering execution.
+- 🔌 **Universal MCP Server:** Exposes stdio Model Context Protocol (MCP) server for seamless integration with AI coding agents.
+- 🛡️ **Strict Constraint Extraction:** Preserves technical specs, budgets, formats, and filenames during distillation.
+- 🏠 **100% Zero-Cloud Ready:** Connects to local `llama-server` endpoints (`http://127.0.0.1:1235/v1`), Ollama (`11434`), LM Studio, or vLLM.
 
 ---
 
 ## 🛠️ Desktop Dictation & OS Integration
 
-### Option 1: Arch Linux + Hyprland (Wayland)
+### Option A: Arch Linux + Hyprland (Wayland)
 
 1. **Install System Dependencies:**
    ```bash
@@ -176,7 +128,7 @@ Process raw prompt text through the distillation engine.
 
 ---
 
-### Option 2: Ubuntu + GNOME Desktop (X11 / Wayland)
+### Option B: Ubuntu + GNOME Desktop (X11 / Wayland)
 
 1. **Install System Dependencies:**
    ```bash
@@ -197,7 +149,7 @@ Process raw prompt text through the distillation engine.
 
 ---
 
-## 🔌 Agent MCP Integration (Antigravity, OpenCode, Kilocode, Hermes)
+## 🔌 Agent MCP Integration
 
 Prompt Distiller includes a native stdio Model Context Protocol (MCP) server at `app/mcp_server.py`.
 
@@ -252,13 +204,53 @@ server:
 
 models:
   provider: "local"
-  api_base: "http://127.0.0.1:1235/v1"                 # Port where local Qwen 35B / 27B or Ollama runs
+  api_base: "http://127.0.0.1:1235/v1"                 # Local Qwen server or Ollama port
   distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"      # Or qwen3.6-27b@q3_k_s
   execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
 
 distillation:
   translate_to_english_for_reasoning: true
   default_output_language: "ru"
+```
+
+### Switching 35B $\leftrightarrow$ 27B Models
+To load a **27B model** (e.g., `qwen3.6-27b@q3_k_s` or `gemma-2-27b`), update `distillation_model` in `config.yaml` or set environment variables:
+```bash
+export LLM_API_BASE="http://127.0.0.1:1235/v1"
+export LLM_MODEL_NAME="qwen3.6-27b@q3_k_s"
+```
+
+---
+
+## 🔌 API Reference
+
+### `POST /v1/distill`
+Compress raw STT transcript or prompt into a high-potency English prompt without downstream execution.
+
+#### Request Payload:
+```json
+{
+  "raw_prompt": "Слушай короче, у меня тут проблема с фотопленкой 120 формата, на кадрах идет белая полоса при сканировании на Epson V850. Подскажи как исправить шаг за шагом?"
+}
+```
+
+#### Response Payload:
+```json
+{
+  "detected_language": "Russian",
+  "raw_input_summary": "User reports a white strip artifact on 120mm film scans using an Epson V850 scanner...",
+  "distilled_prompt": "Troubleshoot a persistent white strip/line artifact on 120mm film scans using an Epson V850 flatbed scanner. Provide a concise, step-by-step diagnostic and fix guide covering: hardware alignment, glass/film holder cleaning, transparency mask positioning, scanner software settings, and calibration.",
+  "intent": "Technical Troubleshooting / Hardware Support",
+  "extracted_constraints": [
+    "120mm film format",
+    "Epson V850 scanner",
+    "White strip/line artifact",
+    "Step-by-step format required"
+  ],
+  "estimated_raw_tokens": 70,
+  "estimated_distilled_tokens": 58,
+  "token_savings_percent": 17.1
+}
 ```
 
 ---
@@ -270,4 +262,3 @@ Contributions are welcome! Feel free to open an issue or submit a pull request f
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for details.
-
