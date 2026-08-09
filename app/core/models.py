@@ -163,8 +163,39 @@ class LLMClient:
 
     async def generate(self, system_prompt: str, user_prompt: str, response_format: Optional[str] = None) -> str:
         """
-        Executes an LLM generation call using LiteLLM or heuristic fallback.
+        Executes an LLM generation call using local HTTP endpoint (e.g. Qwen 35B on port 1235),
+        LiteLLM, or heuristic fallback.
         """
+        # 1. Try Direct HTTP call to local OpenAI-compatible endpoint (Qwen 35B on port 1235)
+        api_base = self.api_base or os.getenv("LLM_API_BASE", "http://127.0.0.1:1235/v1")
+        if api_base:
+            endpoint = api_base.rstrip("/")
+            if not endpoint.endswith("/chat/completions"):
+                endpoint += "/chat/completions"
+            try:
+                import httpx
+                payload = {
+                    "model": self.model_name or "qwen",
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    "temperature": 0.2
+                }
+                if response_format == "json":
+                    payload["response_format"] = {"type": "json_object"}
+
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    resp = await client.post(endpoint, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        content = data["choices"][0]["message"]["content"]
+                        if content and content.strip():
+                            return content
+            except Exception as e:
+                logger.warning(f"Local HTTP LLM call to {endpoint} failed: {e}. Trying litellm/fallback...")
+
+        # 2. Try LiteLLM if API key or external provider configured
         try:
             import litellm
             messages = [
@@ -175,16 +206,16 @@ class LLMClient:
             kwargs: Dict[str, Any] = {
                 "model": self.model_name,
                 "messages": messages,
-                "temperature": 1.0
+                "temperature": 0.2
             }
             
             if self.api_key:
                 kwargs["api_key"] = self.api_key
-            elif self.api_base or (self.provider and self.provider in ["llamacpp", "vllm", "lmstudio", "custom_local"]):
+            else:
                 kwargs["api_key"] = "sk-no-key-required"
 
-            if self.api_base:
-                kwargs["api_base"] = self.api_base
+            if api_base:
+                kwargs["api_base"] = api_base
 
             if response_format == "json":
                 kwargs["response_format"] = {"type": "json_object"}
@@ -193,10 +224,11 @@ class LLMClient:
             return response.choices[0].message.content
         except Exception as e:
             logger.warning(
-                f"LiteLLM call failed or unconfigured for model '{self.model_name}' "
-                f"(api_base='{self.api_base}') ({e}). Falling back to heuristic engine."
+                f"LiteLLM call failed for model '{self.model_name}' "
+                f"({e}). Falling back to heuristic engine."
             )
             return self._heuristic_fallback(system_prompt, user_prompt, response_format)
+
 
     def _heuristic_fallback(self, system_prompt: str, user_prompt: str, response_format: Optional[str]) -> str:
         """

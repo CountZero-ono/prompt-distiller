@@ -83,6 +83,27 @@ async def process_prompt(req: ProcessRequest, authorization: Optional[str] = Hea
     )
     return result
 
+@app.post("/v1/distill")
+async def distill_prompt_only(req: ProcessRequest, authorization: Optional[str] = Header(None)):
+    if not req.raw_prompt.strip():
+        raise HTTPException(status_code=400, detail="raw_prompt cannot be empty")
+    
+    api_key = req.api_key
+    if not api_key and authorization and authorization.startswith("Bearer "):
+        api_key = authorization.replace("Bearer ", "").strip()
+    
+    logger.info(f"Distill-only request (len: {len(req.raw_prompt)}, provider: {req.provider})")
+    
+    result = await distiller.distill_only(
+        raw_prompt=req.raw_prompt,
+        distillation_model=req.distillation_model,
+        api_key=api_key,
+        provider=req.provider,
+        api_base=req.api_base
+    )
+    return result
+
+
 @app.post("/v1/transcribe")
 async def transcribe_audio(file: UploadFile = File(...), api_key: Optional[str] = None):
     temp_path = f"/tmp/{file.filename}"

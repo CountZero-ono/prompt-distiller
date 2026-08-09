@@ -156,35 +156,109 @@ Process raw prompt text through the distillation engine.
 
 ---
 
+## 🛠️ Desktop Dictation & OS Integration
+
+### Option 1: Arch Linux + Hyprland (Wayland)
+
+1. **Install System Dependencies:**
+   ```bash
+   sudo pacman -S pipewire wireplumber wtype libnotify
+   ```
+
+2. **Configure Keybind (`~/.config/hypr/hyprland.conf`):**
+   ```ini
+   # F4 = Plain dictation (untouched)
+   bind = , F4, exec, /home/fuad/OCProjects/dictation/dictate.py
+
+   # Shift+F4 = Distilled AI Prompt Dictation
+   bind = SHIFT, F4, exec, /home/fuad/Projects/BAMA/prompt-distiller/scripts/dictate_distill.py
+   ```
+
+---
+
+### Option 2: Ubuntu + GNOME Desktop (X11 / Wayland)
+
+1. **Install System Dependencies:**
+   ```bash
+   sudo apt update && sudo apt install -y \
+       python3-venv python3-pip pipewire wireplumber wtype xdotool libnotify-bin git
+   ```
+
+2. **Add Desktop User to Audio Group:**
+   ```bash
+   sudo usermod -aG audio $USER
+   ```
+
+3. **Configure GNOME Custom Shortcut (`Shift + F4`):**
+   - Open **Settings $\rightarrow$ Keyboard $\rightarrow$ View and Customize Shortcuts $\rightarrow$ Custom Shortcuts**
+   - **Name:** `Distilled AI Dictation`
+   - **Command:** `/path/to/prompt-distiller/scripts/dictate_distill.py`
+   - **Shortcut:** `Shift + F4`
+
+---
+
+## 🔌 Agent MCP Integration (Antigravity, OpenCode, Kilocode, Hermes)
+
+Prompt Distiller includes a native stdio Model Context Protocol (MCP) server at `app/mcp_server.py`.
+
+### 1. Google Antigravity (`~/.gemini/config/mcp_config.json`)
+```json
+{
+  "mcpServers": {
+    "prompt-distiller": {
+      "command": "/path/to/prompt-distiller/app/mcp_server.py"
+    }
+  }
+}
+```
+
+### 2. OpenCode (`~/.opencode/opencode.json`)
+```json
+"mcp": {
+  "prompt-distiller": {
+    "command": ["/path/to/prompt-distiller/app/mcp_server.py"],
+    "enabled": true,
+    "type": "local"
+  }
+}
+```
+
+### 3. Kilocode (`~/.kilocode/mcp.json`)
+```json
+{
+  "mcpServers": {
+    "prompt-distiller": {
+      "command": "/path/to/prompt-distiller/app/mcp_server.py"
+    }
+  }
+}
+```
+
+### 4. Hermes Agent (`~/.hermes/config.yaml`)
+```yaml
+mcp_servers:
+  prompt-distiller:
+    command: /path/to/prompt-distiller/app/mcp_server.py
+```
+
+---
+
 ## ⚙️ Configuration (`config.yaml`)
 
 ```yaml
 server:
   host: "0.0.0.0"
-  port: 8000
+  port: 8008
 
 models:
-  # Fast model for extraction & prompt distillation
-  distillation_model: "gemini/gemini-1.5-flash"
-  # Heavy reasoning model for task execution
-  execution_model: "gemini/gemini-1.5-pro"
-  
-  # Local Ollama alternatives:
-  # distillation_model: "ollama/qwen2.5:1.5b"
-  # execution_model: "ollama/qwen2.5:32b"
+  provider: "local"
+  api_base: "http://127.0.0.1:1235/v1"                 # Port where local Qwen 35B / 27B or Ollama runs
+  distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"      # Or qwen3.6-27b@q3_k_s
+  execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
 
 distillation:
   translate_to_english_for_reasoning: true
   default_output_language: "ru"
-
-bots:
-  telegram:
-    enabled: false
-    token: "YOUR_TELEGRAM_BOT_TOKEN"
-  signal:
-    enabled: false
-    rest_url: "http://127.0.0.1:8080"
-    account: "+1234567890"
 ```
 
 ---
@@ -196,3 +270,4 @@ Contributions are welcome! Feel free to open an issue or submit a pull request f
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for details.
+

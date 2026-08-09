@@ -5,17 +5,12 @@ server:
   port: 8008
   debug: true
 
-# Models configuration (Provider agnostic: Google Gemini, Groq, OpenAI, Anthropic, DeepSeek, Ollama)
+# Models configuration (Connected to local Qwen 35B server on port 1235)
 models:
-  # Fast, cheap model used for noise extraction and prompt distillation
-  distillation_model: "gemini/gemini-3.6-flash"
-  
-  # Heavy reasoning model used for final task execution
-  execution_model: "gemini/gemini-3.6-flash"
-  
-  # Alternative local options:
-  # distillation_model: "ollama/qwen2.5:1.5b"
-  # execution_model: "ollama/qwen2.5:1.5b"
+  provider: "local"
+  api_base: "http://127.0.0.1:1235/v1"
+  distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"
+  execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
 
 # Settings for token optimization and distillation
 distillation:
