@@ -255,6 +255,41 @@ Compress raw STT transcript or prompt into a high-potency English prompt without
 
 ---
 
+## 🗑️ Uninstallation Guide
+
+To completely remove Prompt Distiller, desktop keybinds, temporary files, and agent MCP registrations from your system:
+
+### 1. Remove Desktop Keybind
+* **Arch Linux / Hyprland:** Remove the `SHIFT, F4` keybind line from `~/.config/hypr/hyprland.conf`:
+  ```ini
+  # Remove this line:
+  bind = SHIFT, F4, exec, /path/to/prompt-distiller/scripts/dictate_distill.py
+  ```
+* **Ubuntu / GNOME Desktop:** Open **Settings $\rightarrow$ Keyboard $\rightarrow$ View and Customize Shortcuts $\rightarrow$ Custom Shortcuts** and delete the `Distilled AI Dictation` shortcut.
+
+---
+
+### 2. Remove Agent MCP Registrations
+Delete the `prompt-distiller` entry from your active agent configuration files:
+
+* **Google Antigravity:** Remove `"prompt-distiller"` block from `~/.gemini/config/mcp_config.json`.
+* **OpenCode:** Remove `"prompt-distiller"` entry under `"mcp"` in `~/.opencode/opencode.json`.
+* **Kilocode:** Remove `"prompt-distiller"` block from `~/.kilocode/mcp.json`.
+* **Hermes Agent:** Remove `prompt-distiller` entry under `mcp_servers:` in `~/.hermes/config.yaml`.
+
+---
+
+### 3. Remove Project Directory & Temporary Dictation Files
+```bash
+# Remove project folder and python virtual environment
+rm -rf /path/to/prompt-distiller
+
+# Remove temporary dictation WAV audio & PID files
+rm -f /tmp/dictate_distill_recording.pid /tmp/dictate_distill.wav
+```
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to open an issue or submit a pull request for new model adapters, bot interfaces, or template presets.
@@ -262,3 +297,4 @@ Contributions are welcome! Feel free to open an issue or submit a pull request f
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for details.
+
