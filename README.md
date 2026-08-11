@@ -41,30 +41,39 @@ It takes raw speech or written text, cleans out the noise, translates Russian re
 
 ## 📐 How It Works
 
+Prompt dictation uses a 2-press toggle workflow triggered by `Shift+F4`:
+1. **Press 1 (Start Recording):** Spawns `pw-record` to record mic audio to `/tmp/dictate_distill.wav` and creates `/tmp/dictate_distill_recording.pid`.
+2. **Press 2 (Stop & Process):** Sends `SIGINT` to `pw-record`, streams WAV to local Wyoming Whisper, distills the prompt, and types the result into the focused window.
+
 ```
-┌───────────────────────────┐
-│  Shift+F4 Keybind (Mic)   │
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│   pw-record (PipeWire)    │ ──► /tmp/dictate_distill.wav
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│  Wyoming Faster-Whisper   │ ──► Raw Transcript ("Слушай короче, контейнер...")
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│  Prompt Distiller Engine  │ ──► Local Qwen 3.6 35B / 27B (Port 1235)
-└─────────────┬─────────────┘
-              │
-              ▼
-┌───────────────────────────┐
-│ wtype / xdotool Injector  │ ──► Injects clean English prompt into active window!
-└───────────────────────────┘     (Antigravity / Hermes / OpenCode / Kilocode)
+┌────────────────────────────────────────┐
+│  Shift+F4 (1st Press: Start Recording) │
+└───────────────────┬────────────────────┘
+                    │
+                    ▼
+┌────────────────────────────────────────┐
+│ pw-record (mic to /tmp/dictate_distill)│
+└────────────────────────────────────────┘
+                    │
+                    ▼
+┌────────────────────────────────────────┐
+│ Shift+F4 (2nd Press: Stop & Transcribe)│
+└───────────────────┬────────────────────┘
+                    │
+                    ▼
+┌────────────────────────────────────────┐
+│  Wyoming Faster-Whisper (Port 10300)   │ ──► Raw Transcript ("Слушай короче...")
+└───────────────────┬────────────────────┘
+                    │
+                    ▼
+┌────────────────────────────────────────┐
+│  Prompt Distiller Engine (Port 8008)   │ ──► Local Qwen 3.6 35B / 27B (Port 1235)
+└───────────────────┬────────────────────┘
+                    │
+                    ▼
+┌────────────────────────────────────────┐
+│ wtype / xdotool Injector               │ ──► Injects clean English prompt into active window!
+└────────────────────────────────────────┘     (Antigravity / Hermes / OpenCode / Kilocode)
 ```
 
 ---
