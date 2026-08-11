@@ -238,7 +238,7 @@ class LLMClient:
             return json.dumps({
                 "detected_language": "Russian (ru)",
                 "raw_input_summary": f"User query: '{user_prompt[:80]}...'",
-                "distilled_prompt": f"Address core request efficiently: {user_prompt[:120]}",
+                "distilled_prompt": user_prompt,
                 "intent": "general_inquiry",
                 "extracted_constraints": ["Concise output required"],
                 "estimated_raw_tokens": len(user_prompt.split()) * 2,

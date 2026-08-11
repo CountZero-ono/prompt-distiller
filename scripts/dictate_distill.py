@@ -80,7 +80,10 @@ def distill_prompt(raw_text: str) -> str:
                 data = json.loads(response.read().decode("utf-8"))
                 distilled = data.get("distilled_prompt", raw_text)
                 savings = data.get("token_savings_percent", 0)
-                subprocess.run(["notify-send", "-t", "2500", "⚡ Distilled", f"Saved {savings}% tokens! Typing prompt..."])
+                if distilled == raw_text or savings == 0:
+                    subprocess.run(["notify-send", "-t", "3000", "⚠️ LLM Offline / Raw Prompt", "Could not reach LLM. Typing raw transcript..."])
+                else:
+                    subprocess.run(["notify-send", "-t", "2500", "⚡ Distilled", f"Saved {savings}% tokens! Typing prompt..."])
                 return distilled
     except Exception as e:
         print(f"HTTP Distiller fallback notice ({e}). Attempting direct python import...")
@@ -101,7 +104,10 @@ def distill_prompt(raw_text: str) -> str:
         res = asyncio.run(distiller.distill_only(raw_text))
         distilled = res.get("distilled_prompt", raw_text)
         savings = res.get("token_savings_percent", 0)
-        subprocess.run(["notify-send", "-t", "2500", "⚡ Distilled (Offline)", f"Saved {savings}% tokens! Typing prompt..."])
+        if distilled == raw_text or savings == 0:
+            subprocess.run(["notify-send", "-t", "3000", "⚠️ LLM Offline / Raw Prompt", "Could not reach LLM. Typing raw transcript..."])
+        else:
+            subprocess.run(["notify-send", "-t", "2500", "⚡ Distilled (Offline)", f"Saved {savings}% tokens! Typing prompt..."])
         return distilled
     except Exception as ex:
         print(f"Fallback distiller error: {ex}")
