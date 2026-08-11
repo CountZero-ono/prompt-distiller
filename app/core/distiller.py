@@ -38,8 +38,11 @@ Maintain bullet points, step-by-step instructions, and technical clarity. Strip 
 class PromptDistiller:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.default_distill_model = config.get("models", {}).get("distillation_model", "gemini/gemini-3.6-flash")
-        self.default_exec_model = config.get("models", {}).get("execution_model", "gemini/gemini-3.6-flash")
+        models_cfg = config.get("models", {})
+        self.default_distill_model = models_cfg.get("distillation_model", "gemini/gemini-3.6-flash")
+        self.default_exec_model = models_cfg.get("execution_model", "gemini/gemini-3.6-flash")
+        self.default_api_base = models_cfg.get("api_base")
+        self.default_provider = models_cfg.get("provider")
 
     def estimate_tokens(self, text: str) -> int:
         """
@@ -65,8 +68,11 @@ class PromptDistiller:
         Full 4-phase pipeline execution:
         Raw Input -> Distilled English Prompt -> Execution Model -> Target Language Output
         """
-        if provider and provider in MODEL_REGISTRY:
-            p_info = MODEL_REGISTRY[provider]
+        active_provider = provider or self.default_provider
+        active_api_base = api_base or self.default_api_base
+
+        if active_provider and active_provider in MODEL_REGISTRY:
+            p_info = MODEL_REGISTRY[active_provider]
             fallback_distill = p_info.get("distillation_default", self.default_distill_model)
             fallback_exec = p_info.get("execution_default", self.default_exec_model)
         else:
@@ -79,14 +85,14 @@ class PromptDistiller:
         distiller_client = LLMClient(
             model_name=distill_model_name,
             api_key=api_key,
-            provider=provider,
-            api_base=api_base
+            provider=active_provider,
+            api_base=active_api_base
         )
         executor_client = LLMClient(
             model_name=exec_model_name,
             api_key=api_key,
-            provider=provider,
-            api_base=api_base
+            provider=active_provider,
+            api_base=active_api_base
         )
 
         raw_tokens = self.estimate_tokens(raw_prompt)
@@ -158,16 +164,19 @@ class PromptDistiller:
         Runs ONLY the prompt distillation & noise removal phase (Phase 1 & 2).
         Returns the distilled English prompt and compression metrics.
         """
+        active_provider = provider or self.default_provider
+        active_api_base = api_base or self.default_api_base
+
         fallback_distill = self.default_distill_model
-        if provider and provider in MODEL_REGISTRY:
-            fallback_distill = MODEL_REGISTRY[provider].get("distillation_default", self.default_distill_model)
+        if active_provider and active_provider in MODEL_REGISTRY:
+            fallback_distill = MODEL_REGISTRY[active_provider].get("distillation_default", self.default_distill_model)
 
         distill_model_name = distillation_model or fallback_distill
         distiller_client = LLMClient(
             model_name=distill_model_name,
             api_key=api_key,
-            provider=provider,
-            api_base=api_base
+            provider=active_provider,
+            api_base=active_api_base
         )
 
         raw_tokens = self.estimate_tokens(raw_prompt)
