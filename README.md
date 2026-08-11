@@ -2,206 +2,185 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
-  <img src="https://img.shields.io/badge/FastAPI-0.110+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/MCP-Server-4682B4?style=for-the-badge" alt="MCP Server" />
-  <img src="https://img.shields.io/badge/Local%20AI-Qwen%2035B%20%7C%2027B-6f42c1?style=for-the-badge" alt="Local AI" />
+  <img src="https://img.shields.io/badge/Local%20AI-Qwen%2035B-6f42c1?style=for-the-badge" alt="Local AI" />
+  <img src="https://img.shields.io/badge/Wayland-wtype-009688?style=for-the-badge" alt="wtype" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
 </p>
 
-> **A practical local helper tool that cleans up voice dictation and long-winded prompts in Russian and English before sending them to AI agents.**
+> **Strips filler, translates Russian → English, and compresses rambling voice dictation or typed prompts into tight, high-potency instructions for AI agents.**
+
+Part of the [Sprawl](https://github.com/CountZero-ono) personal AI ecosystem.
 
 ---
 
-## 💡 What This Actually Does
+## 💡 What It Does
 
-When using voice dictation or typing out thoughts quickly, prompts often come out messy:
-* Speech stutters and vocal filler (*"э-э"*, *"короче"*, *"типа"*, *"ну"*, *"um"*, *"uh"*, *"you know"*).
-* Spoken formatting commands like *"новая строка"* or *"абзац"*.
-* Long, rambling sentences in Russian that take up extra tokens in English-optimized models.
+Voice dictation and stream-of-consciousness typing produce messy prompts:
+- Russian filler: *"э-э"*, *"короче"*, *"типа"*, *"ну"*, *"слушай"*
+- English filler: *"um"*, *"uh"*, *"you know"*, *"basically"*
+- Spoken formatting: *"новая строка"*, *"абзац"*, *"new line"*
+- Long Cyrillic text that costs 2–3× more tokens in English-optimized models
 
-**Prompt Distiller** sits between your voice dictation (or keyboard) and your AI agents (Antigravity, OpenCode, Kilocode, Hermes). 
-
-It takes raw speech or written text, cleans out the noise, translates Russian requests into clear English instructions, and types the result directly into your active window.
-
-> ℹ️ **Supported Languages:** Currently tuned for **Russian** and **English** inputs.
+**Prompt Distiller** compresses all of this into a dense, precise English prompt — saving 50–75% tokens — and either injects it directly into the active window (voice workflow) or returns it to the calling agent (MCP workflow).
 
 ---
 
 ## 🛠️ Real-Life Example
 
-### What you dictate into the mic (Russian):
-> *"Слушай короче, у меня тут Docker контейнер на хосте вылетает с ошибкой exit code 137 при сборке, видимо памяти не хватает. Посмотри в docker-compose.yml и скажи как поднять лимиты по шагам, новая строка и ещё проверь swap."*
+**What you dictate (Russian STT):**
+> *«Слушай короче, у меня тут Docker контейнер на хосте вылетает с ошибкой exit code 137 при сборке, видимо памяти не хватает. Посмотри в docker-compose.yml и скажи как поднять лимиты по шагам, новая строка и ещё проверь swap.»*
 
-### What Prompt Distiller types into your active window (English):
-> *"Troubleshoot Docker container crashing with exit code 137 (OOM) during build. Provide step-by-step instructions to increase memory limits in docker-compose.yml and verify host swap configuration."*
-
-* **Result:** No speech fillers, clear technical constraints, and a direct prompt ready for your AI agent to execute.
+**What lands in your AI agent:**
+> *"Troubleshoot Docker container crashing with exit code 137 (OOM) during build. Step-by-step: increase memory limits in docker-compose.yml and verify host swap configuration."*
 
 ---
 
-## 📐 How It Works
+## 🏗️ Architecture
 
-Prompt dictation uses a 2-press toggle workflow triggered by `Shift+F4`:
-1. **Press 1 (Start Recording):** Spawns `pw-record` to record mic audio to `/tmp/dictate_distill.wav` and creates `/tmp/dictate_distill_recording.pid`.
-2. **Press 2 (Stop & Process):** Sends `SIGINT` to `pw-record`, streams WAV to local Wyoming Whisper, distills the prompt, and types the result into the focused window.
+Two independent entry points — both hit the same distillation core:
 
 ```
-┌────────────────────────────────────────┐
-│  Shift+F4 (1st Press: Start Recording) │
-└───────────────────┬────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────┐
-│ pw-record (mic to /tmp/dictate_distill)│
-└────────────────────────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────┐
-│ Shift+F4 (2nd Press: Stop & Transcribe)│
-└───────────────────┬────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────┐
-│  Wyoming Faster-Whisper (Port 10300)   │ ──► Raw Transcript ("Слушай короче...")
-└───────────────────┬────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────┐
-│  Prompt Distiller Engine (Port 8008)   │ ──► Local Qwen 3.6 35B / 27B (Port 1235)
-└───────────────────┬────────────────────┘
-                    │
-                    ▼
-┌────────────────────────────────────────┐
-│ wtype / xdotool Injector               │ ──► Injects clean English prompt into active window!
-└────────────────────────────────────────┘     (Antigravity / Hermes / OpenCode / Kilocode)
+┌─────────────────────────────┐     ┌──────────────────────────────┐
+│  Shift+F4 (Voice Workflow)  │     │  MCP Tool (Agent Workflow)   │
+│                             │     │                              │
+│  pw-record → mic audio      │     │  Agent sees messy prompt     │
+│  Wyoming Whisper (10300)    │     │  calls distill_prompt tool   │
+│  → raw transcript           │     │  → gets clean English back   │
+└──────────────┬──────────────┘     └──────────────┬───────────────┘
+               │                                    │
+               ▼                                    ▼
+       ┌───────────────────────────────────────────────┐
+       │          app/core/distiller.py                │
+       │  PromptDistiller → Local Qwen 35B (port 1235) │
+       └───────────────────────┬───────────────────────┘
+                               │
+               ┌───────────────┴────────────────┐
+               ▼                                ▼
+   wtype → injects into active window    Returns distilled prompt
+   (Antigravity / Hermes / any app)      to calling agent context
 ```
 
 ---
 
-## 🛠️ Desktop Setup
+## 📂 Project Structure
 
-### Arch Linux + Hyprland (Wayland)
-
-1. **Install System Dependencies:**
-   ```bash
-   sudo pacman -S pipewire wireplumber wtype libnotify
-   ```
-
-2. **Configure Keybind (`~/.config/hypr/hyprland.conf`):**
-   ```ini
-   # F4 = Plain raw dictation
-   bind = , F4, exec, /path/to/dictation/dictate.py
-
-   # Shift+F4 = Distilled AI Prompt Dictation
-   bind = SHIFT, F4, exec, /path/to/prompt-distiller/scripts/dictate_distill.py
-   ```
+```
+prompt-distiller/
+├── app/
+│   ├── core/
+│   │   ├── distiller.py     # Distillation engine (PromptDistiller class)
+│   │   ├── models.py        # LLMClient + provider/model registry
+│   │   └── audio.py         # Audio transcription fallback (faster-whisper)
+│   └── mcp_server.py        # MCP stdio server exposing distill_prompt tool
+├── scripts/
+│   └── dictate_distill.py   # Shift+F4 voice dictation → wtype injection
+├── config.yaml              # Model configuration
+└── requirements.txt
+```
 
 ---
 
-### Ubuntu + GNOME Desktop (X11 / Wayland)
+## ⚙️ Setup
 
-1. **Install System Dependencies:**
-   ```bash
-   sudo apt update && sudo apt install -y \
-       python3-venv python3-pip pipewire wireplumber wtype xdotool libnotify-bin git
-   ```
+### 1. Install Python dependencies
 
-2. **Add User to Audio Group:**
-   ```bash
-   sudo usermod -aG audio $USER
-   ```
+```bash
+cd prompt-distiller
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
 
-3. **Configure Custom Shortcut (`Shift + F4`):**
-   - Open **Settings $\rightarrow$ Keyboard $\rightarrow$ Custom Shortcuts**
-   - **Name:** `Distilled AI Dictation`
-   - **Command:** `/path/to/prompt-distiller/scripts/dictate_distill.py`
-   - **Shortcut:** `Shift + F4`
+### 2. Install system dependencies (Arch Linux / Hyprland)
+
+```bash
+sudo pacman -S pipewire wireplumber wtype libnotify
+```
+
+### 3. Configure `config.yaml`
+
+Point it at your local model server:
+
+```yaml
+models:
+  provider: "local"
+  api_base: "http://127.0.0.1:1235/v1"      # Your llama-server / LM Studio / Ollama
+  distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"
+  execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
+```
+
+Supports any OpenAI-compatible local server. For cloud providers, set `provider` to `gemini`, `groq`, `openai`, or `anthropic` and add the relevant API key as an env variable (`GEMINI_API_KEY`, `GROQ_API_KEY`, etc.).
 
 ---
 
-## 🔌 Agent Integration (MCP)
+## 🎙️ Voice Dictation Setup (Shift+F4)
 
-Prompt Distiller includes a standard Model Context Protocol (MCP) server at `app/mcp_server.py`.
+2-press toggle workflow:
+- **Press 1 (Start):** Spawns `pw-record` → `/tmp/dictate_distill.wav`, writes PID to `/tmp/dictate_distill_recording.pid`
+- **Press 2 (Stop & Process):** Kills `pw-record`, streams WAV to Wyoming Faster-Whisper on port 10300, distills via PromptDistiller, types result with `wtype`
 
-### 1. Google Antigravity (`~/.gemini/config/mcp_config.json`)
+**Hyprland keybind (`~/.config/hypr/hyprland.conf`):**
+```ini
+bind = SHIFT, F4, exec, /path/to/prompt-distiller/venv/bin/python /path/to/prompt-distiller/scripts/dictate_distill.py
+```
+
+**Wyoming Faster-Whisper** must be running on port 10300. If unavailable, the script falls back to a local `faster-whisper` Python call.
+
+---
+
+## 🔌 MCP Integration
+
+The MCP server (`app/mcp_server.py`) exposes a single tool: `distill_prompt`.
+
+Agents call it when they detect a messy, Russian, or rambling prompt. The tool returns the distilled English version along with token savings metadata.
+
+### Google Antigravity (`~/.gemini/config/mcp_config.json`)
 ```json
 {
   "mcpServers": {
     "prompt-distiller": {
-      "command": "/path/to/prompt-distiller/app/mcp_server.py"
+      "command": "/path/to/prompt-distiller/venv/bin/python",
+      "args": ["/path/to/prompt-distiller/app/mcp_server.py"]
     }
   }
 }
 ```
 
-### 2. OpenCode (`~/.opencode/opencode.json`)
+### OpenCode (`~/.opencode/opencode.json`)
 ```json
 "mcp": {
   "prompt-distiller": {
-    "command": ["/path/to/prompt-distiller/app/mcp_server.py"],
+    "command": ["/path/to/prompt-distiller/venv/bin/python", "/path/to/prompt-distiller/app/mcp_server.py"],
     "enabled": true,
     "type": "local"
   }
 }
 ```
 
-### 3. Kilocode (`~/.kilocode/mcp.json`)
+### Kilocode (`~/.kilocode/mcp.json`)
 ```json
 {
   "mcpServers": {
     "prompt-distiller": {
-      "command": "/path/to/prompt-distiller/app/mcp_server.py"
+      "command": "/path/to/prompt-distiller/venv/bin/python",
+      "args": ["/path/to/prompt-distiller/app/mcp_server.py"]
     }
   }
 }
 ```
 
-### 4. Hermes Agent (`~/.hermes/config.yaml`)
+### Hermes Agent (`~/.hermes/config.yaml`)
 ```yaml
 mcp_servers:
   prompt-distiller:
-    command: /path/to/prompt-distiller/app/mcp_server.py
-```
-
----
-
-## ⚙️ Configuration (`config.yaml`)
-
-```yaml
-server:
-  host: "0.0.0.0"
-  port: 8008
-
-models:
-  provider: "local"
-  api_base: "http://127.0.0.1:1235/v1"                 # Port where local Qwen server or Ollama runs
-  distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"      # Or qwen3.6-27b@q3_k_s
-  execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
-
-distillation:
-  translate_to_english_for_reasoning: true
-  default_output_language: "ru"
-```
-
----
-
-## 🗑️ Uninstallation Guide
-
-### 1. Remove Desktop Keybind
-* **Hyprland:** Remove the `SHIFT, F4` line from `~/.config/hypr/hyprland.conf`.
-* **GNOME:** Delete the custom shortcut in **Settings $\rightarrow$ Keyboard**.
-
-### 2. Remove Agent MCP Registrations
-Delete the `"prompt-distiller"` entry from your agent config file (`mcp_config.json`, `opencode.json`, `mcp.json`, or `config.yaml`).
-
-### 3. Remove Project Files
-```bash
-rm -rf /path/to/prompt-distiller
-rm -f /tmp/dictate_distill_recording.pid /tmp/dictate_distill.wav
+    command: /path/to/prompt-distiller/venv/bin/python
+    args:
+      - /path/to/prompt-distiller/app/mcp_server.py
 ```
 
 ---
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE` for details.
+MIT License.

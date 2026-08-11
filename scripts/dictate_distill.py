@@ -75,7 +75,7 @@ def distill_prompt(raw_text: str) -> str:
     )
     
     try:
-        with urllib.request.urlopen(req, timeout=10) as response:
+        with urllib.request.urlopen(req, timeout=120) as response:
             if response.status == 200:
                 data = json.loads(response.read().decode("utf-8"))
                 distilled = data.get("distilled_prompt", raw_text)
@@ -134,7 +134,12 @@ def stop_recording_and_type():
     try:
         os.kill(pid, signal.SIGINT)
         import time
-        time.sleep(0.5)
+        for _ in range(20):
+            try:
+                os.kill(pid, 0)
+                time.sleep(0.1)
+            except ProcessLookupError:
+                break
     except ProcessLookupError:
         pass
     
@@ -147,8 +152,12 @@ def stop_recording_and_type():
         distilled = distill_prompt(raw_text).strip()
         print(f"Distilled Prompt: {distilled}")
         
-        safe_text = distilled.replace('"', '\\"')
-        subprocess.run(f'wtype "{safe_text}"', shell=True)
+        result = subprocess.run(["wtype", distilled], capture_output=True)
+        if result.returncode != 0:
+            err = result.stderr.decode().strip()
+            print(f"wtype failed (rc={result.returncode}): {err}")
+            subprocess.run(["notify-send", "-t", "3000", "⚠️ wtype Failed",
+                           f"Could not type into window. Are you on Wayland? ({err[:80]})"])
     else:
         subprocess.run(["notify-send", "-t", "2000", "⚠️ Dictation", "No speech detected."])
 

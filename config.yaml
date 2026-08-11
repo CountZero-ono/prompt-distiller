@@ -1,18 +1,13 @@
-# Prompt Distiller Configuration File
+# Prompt Distiller Configuration
 
-server:
-  host: "0.0.0.0"
-  port: 8008
-  debug: true
-
-# Models configuration (Connected to local Qwen 35B server on port 1235)
+# Connected to local Qwen 35B server on port 1235
 models:
   provider: "local"
   api_base: "http://127.0.0.1:1235/v1"
   distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"
   execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
 
-# Settings for token optimization and distillation
+# Distillation behaviour
 distillation:
   translate_to_english_for_reasoning: true
   auto_detect_language: true
@@ -20,17 +15,7 @@ distillation:
   strict_constraint_preservation: true
   token_savings_tracking: true
 
-# Bot integration settings
-bots:
-  telegram:
-    enabled: false
-    token: "YOUR_TELEGRAM_BOT_TOKEN"
-  signal:
-    enabled: false
-    rest_url: "http://127.0.0.1:8080"
-    account: "+1234567890"
-
-# Whisper ASR for voice notes
+# Whisper ASR fallback (used if Wyoming Faster-Whisper is unavailable)
 audio:
   whisper_model: "base"
   local_whisper: true

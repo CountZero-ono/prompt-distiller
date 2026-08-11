@@ -1,12 +1,32 @@
-# Prompt Distiller Workspace Agent Instructions
+# Prompt Distiller — Agent Instructions
 
 ## Overview
-This repository contains the **Prompt Distiller & Gateway Engine**, an intelligent middleware gateway that compresses messy human prompts & STT voice dictations (in Russian, English, or mixed) into high-potency micro-prompts for reasoning LLMs.
+This repository is the **Prompt Distiller**, a lightweight middleware tool that compresses messy human prompts and STT voice dictations (Russian, English, or mixed) into high-potency micro-prompts for reasoning LLMs.
 
-## Core Integration Points
-1. **Local Model Server**: Connects to local Qwen 3.6 35B on `http://127.0.0.1:1235/v1`.
-2. **Desktop Voice Dictation**: `Shift+F4` keybind triggers `scripts/dictate_distill.py` using a 2-press toggle workflow:
-   - **Press 1 (Start)**: Spawns `pw-record` to record audio to `/tmp/dictate_distill.wav` and creates PID file `/tmp/dictate_distill_recording.pid`.
-   - **Press 2 (Stop & Process)**: Sends `SIGINT` to `pw-record`, streams WAV to local Wyoming Faster-Whisper on `127.0.0.1:10300`, distills raw transcript via Prompt Distiller (`http://127.0.0.1:8008/v1/distill`), and injects distilled prompt into focused window via `wtype`.
-3. **MCP Tooling (`distill_prompt`)**: Available across Antigravity, OpenCode, Kilocode, and Hermes Agent.
-4. **FastAPI Endpoints**: `POST /v1/process` (full response) and `POST /v1/distill` (prompt distillation only).
+## Architecture — Two Entry Points
+
+### 1. Voice Dictation (`scripts/dictate_distill.py`)
+- Triggered by `Shift+F4` keybind in Hyprland
+- **Press 1 (Start):** Spawns `pw-record` → `/tmp/dictate_distill.wav`, PID file → `/tmp/dictate_distill_recording.pid`
+- **Press 2 (Stop & Process):** Kills `pw-record`, streams WAV to Wyoming Faster-Whisper on `127.0.0.1:10300`, distills raw transcript via `PromptDistiller`, injects result into focused window via `wtype`
+- Falls back to direct `PromptDistiller` Python import if HTTP server is unavailable
+
+### 2. MCP Tool (`app/mcp_server.py`)
+- Exposes `distill_prompt` tool over stdio JSON-RPC to Antigravity, OpenCode, Kilocode, and Hermes
+- Agents call this tool when they detect a messy, rambling, or Russian prompt — agent decides autonomously when to distill
+- Works on both STT-dictated and typed text
+
+## Core Modules
+- `app/core/distiller.py` — `PromptDistiller` class with `distill_only()` method; shared by both entry points
+- `app/core/models.py` — `LLMClient` + `MODEL_REGISTRY`; local-first (port 1235), LiteLLM cloud fallback
+- `app/core/audio.py` — Whisper fallback transcription (used only if Wyoming is unavailable)
+
+## Local Model
+- **Primary:** Qwen3.6-35B-A3B-MTP@IQ2_M on `http://127.0.0.1:1235/v1`
+- **Provider config key:** `"local"` (maps to `custom_local` in the registry)
+
+## What Does NOT Exist Here
+- No FastAPI HTTP server
+- No web UI
+- No Telegram / Signal bots
+- No Docker deployment (Dockerfile present but not used)

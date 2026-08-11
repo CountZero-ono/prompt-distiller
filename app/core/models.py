@@ -5,6 +5,9 @@ from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger("prompt_distiller.models")
 
+# Cloud providers (no local api_base by default)
+CLOUD_PROVIDERS = {"gemini", "groq", "openai", "anthropic", "deepseek"}
+
 # 2026 Model Registry with cloud providers and universal local inference engines
 MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
     "gemini": {
@@ -12,12 +15,13 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "free_tier": True,
         "requires_api_key": True,
         "key_url": "https://aistudio.google.com/app/apikey",
-        "distillation_default": "gemini/gemini-3.6-flash",
-        "execution_default": "gemini/gemini-3.6-flash",
+        "api_key_env": "GEMINI_API_KEY",
+        "distillation_default": "gemini/gemini-2.0-flash",
+        "execution_default": "gemini/gemini-2.5-pro",
         "models": [
-            {"id": "gemini/gemini-3.6-flash", "label": "Gemini 3.6 Flash (Fast / Free)", "recommended_for": "distillation"},
-            {"id": "gemini/gemini-3.1-pro", "label": "Gemini 3.1 Pro (Heavy Reasoning)", "recommended_for": "execution"},
-            {"id": "gemini/gemini-3.5-flash", "label": "Gemini 3.5 Flash", "recommended_for": "distillation"}
+            {"id": "gemini/gemini-2.0-flash", "label": "Gemini 2.0 Flash (Fast / Free)", "recommended_for": "distillation"},
+            {"id": "gemini/gemini-2.5-flash", "label": "Gemini 2.5 Flash", "recommended_for": "distillation"},
+            {"id": "gemini/gemini-2.5-pro", "label": "Gemini 2.5 Pro (Reasoning)", "recommended_for": "execution"}
         ]
     },
     "groq": {
@@ -25,12 +29,13 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "free_tier": True,
         "requires_api_key": True,
         "key_url": "https://console.groq.com/keys",
+        "api_key_env": "GROQ_API_KEY",
         "distillation_default": "groq/llama-3.1-8b-instant",
         "execution_default": "groq/llama-3.3-70b-versatile",
         "models": [
             {"id": "groq/llama-3.1-8b-instant", "label": "Llama 3.1 8B Instant (Ultra-Fast)", "recommended_for": "distillation"},
             {"id": "groq/llama-3.3-70b-versatile", "label": "Llama 3.3 70B Versatile (Free Reasoning)", "recommended_for": "execution"},
-            {"id": "groq/qwen-2.5-32b", "label": "Qwen 2.5 32B (Groq Free)", "recommended_for": "execution"}
+            {"id": "groq/qwen-qwq-32b", "label": "Qwen QwQ 32B (Groq)", "recommended_for": "execution"}
         ]
     },
     "openai": {
@@ -38,13 +43,12 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "free_tier": False,
         "requires_api_key": True,
         "key_url": "https://platform.openai.com/api-keys",
+        "api_key_env": "OPENAI_API_KEY",
         "distillation_default": "gpt-4o-mini",
         "execution_default": "gpt-4o",
         "models": [
             {"id": "gpt-4o-mini", "label": "GPT-4o Mini (Fast)", "recommended_for": "distillation"},
-            {"id": "gpt-5.6-luna", "label": "GPT-5.6 Luna (Fast 2026)", "recommended_for": "distillation"},
             {"id": "gpt-4o", "label": "GPT-4o (Reasoning)", "recommended_for": "execution"},
-            {"id": "gpt-5.6-sol", "label": "GPT-5.6 Sol (Frontier Reasoning)", "recommended_for": "execution"},
             {"id": "o3-mini", "label": "o3-mini (Reasoning)", "recommended_for": "execution"}
         ]
     },
@@ -53,13 +57,13 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "free_tier": False,
         "requires_api_key": True,
         "key_url": "https://console.anthropic.com/",
+        "api_key_env": "ANTHROPIC_API_KEY",
         "distillation_default": "claude-3-5-haiku-20241022",
         "execution_default": "claude-3-5-sonnet-20241022",
         "models": [
             {"id": "claude-3-5-haiku-20241022", "label": "Claude 3.5 Haiku", "recommended_for": "distillation"},
-            {"id": "claude-sonnet-5", "label": "Claude Sonnet 5 (2026)", "recommended_for": "distillation"},
             {"id": "claude-3-5-sonnet-20241022", "label": "Claude 3.5 Sonnet", "recommended_for": "execution"},
-            {"id": "claude-opus-5", "label": "Claude Opus 5 (Frontier)", "recommended_for": "execution"}
+            {"id": "claude-opus-4-5", "label": "Claude Opus 4.5 (Frontier)", "recommended_for": "execution"}
         ]
     },
     "deepseek": {
@@ -67,11 +71,11 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
         "free_tier": False,
         "requires_api_key": True,
         "key_url": "https://openrouter.ai/keys",
-        "distillation_default": "openrouter/deepseek/deepseek-v4-flash",
+        "api_key_env": "OPENROUTER_API_KEY",
+        "distillation_default": "openrouter/deepseek/deepseek-chat",
         "execution_default": "openrouter/deepseek/deepseek-r1",
         "models": [
-            {"id": "openrouter/deepseek/deepseek-v4-flash", "label": "DeepSeek V4 Flash", "recommended_for": "distillation"},
-            {"id": "openrouter/deepseek/deepseek-v4-pro", "label": "DeepSeek V4 Pro", "recommended_for": "execution"},
+            {"id": "openrouter/deepseek/deepseek-chat", "label": "DeepSeek Chat (Fast)", "recommended_for": "distillation"},
             {"id": "openrouter/deepseek/deepseek-r1", "label": "DeepSeek R1 (Reasoning)", "recommended_for": "execution"}
         ]
     },
@@ -134,6 +138,9 @@ MODEL_REGISTRY: Dict[str, Dict[str, Any]] = {
     }
 }
 
+# Alias: "local" in config.yaml maps to custom_local behaviour
+MODEL_REGISTRY["local"] = MODEL_REGISTRY["custom_local"]
+
 def get_model_registry() -> Dict[str, Any]:
     return MODEL_REGISTRY
 
@@ -153,23 +160,38 @@ class LLMClient:
         self.model_name = model_name
         self.provider = provider
         self.api_base = api_base
-        self.api_key = (
-            api_key 
-            or os.getenv("GEMINI_API_KEY") 
-            or os.getenv("GROQ_API_KEY") 
-            or os.getenv("OPENAI_API_KEY")
-            or os.getenv("ANTHROPIC_API_KEY")
-        )
+        # Resolve API key provider-aware: pick the env var matching the active provider.
+        # Falling back to any set key only when provider is unknown.
+        if api_key:
+            self.api_key = api_key
+        elif provider and provider in MODEL_REGISTRY:
+            env_var = MODEL_REGISTRY[provider].get("api_key_env")
+            self.api_key = os.getenv(env_var) if env_var else None
+        else:
+            # Generic fallback: try known env vars in order
+            self.api_key = (
+                os.getenv("GEMINI_API_KEY")
+                or os.getenv("GROQ_API_KEY")
+                or os.getenv("OPENAI_API_KEY")
+                or os.getenv("ANTHROPIC_API_KEY")
+            )
 
     async def generate(self, system_prompt: str, user_prompt: str, response_format: Optional[str] = None) -> str:
         """
         Executes an LLM generation call using local HTTP endpoint (e.g. Qwen 35B on port 1235),
         LiteLLM, or heuristic fallback.
         """
-        # 1. Try Direct HTTP call to local OpenAI-compatible endpoint (Qwen 35B on port 1235)
-        api_base = self.api_base or os.getenv("LLM_API_BASE", "http://127.0.0.1:1235/v1")
-        if api_base:
-            endpoint = api_base.rstrip("/")
+        is_cloud = self.provider in CLOUD_PROVIDERS
+
+        # 1. Try Direct HTTP call to local OpenAI-compatible endpoint.
+        # Only attempted for local/custom providers, never for cloud providers to avoid
+        # accidentally routing cloud requests to 127.0.0.1:1235.
+        local_api_base = self.api_base
+        if not is_cloud and not local_api_base:
+            local_api_base = os.getenv("LLM_API_BASE", "http://127.0.0.1:1235/v1")
+
+        if local_api_base:
+            endpoint = local_api_base.rstrip("/")
             if not endpoint.endswith("/chat/completions"):
                 endpoint += "/chat/completions"
             try:
@@ -214,8 +236,10 @@ class LLMClient:
             else:
                 kwargs["api_key"] = "sk-no-key-required"
 
-            if api_base:
-                kwargs["api_base"] = api_base
+            # Only pass api_base to LiteLLM for local/custom providers; cloud
+            # providers use their own SDK endpoints and must not get a local URL.
+            if local_api_base and not is_cloud:
+                kwargs["api_base"] = local_api_base
 
             if response_format == "json":
                 kwargs["response_format"] = {"type": "json_object"}

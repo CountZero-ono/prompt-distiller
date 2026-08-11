@@ -13,6 +13,9 @@ import logging
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.core.distiller import PromptDistiller
 
+root_logger = logging.getLogger()
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
 logging.basicConfig(level=logging.ERROR, stream=sys.stderr)
 
 class PromptDistillerMCPServer:
