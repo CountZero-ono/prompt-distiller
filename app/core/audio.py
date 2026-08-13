@@ -57,11 +57,6 @@ class AudioTranscriber:
         except Exception as e:
             logger.debug(f"Standard whisper unavailable ({e}). Checking for Cloud API or mock fallback...")
 
-        # Fallback transcript for demo / offline operation
-        logger.warning("Local ASR engines unavailable. Returning sample audio transcription.")
-        return (
-            "Слушай, у меня тут проблема со сканированием пленки на ролике 120. "
-            "Появляется какая-то белая полоса посередине кадров, и я не могу понять, "
-            "это пыль на стекле сканера или софт тупит. И кстати, до скольки сегодня "
-            "открыта лаборатория для сдачи заказов?"
-        )
+        # If all local ASR engines fail, log warning and return empty string
+        logger.warning("Local ASR engines unavailable. Transcription failed.")
+        return ""

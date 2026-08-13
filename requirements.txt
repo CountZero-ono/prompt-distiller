@@ -4,3 +4,10 @@ httpx>=0.27.0
 python-dotenv>=1.0.1
 faster-whisper>=1.0.0
 openai-whisper>=20231117
+wyoming-client
+evdev
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+tiktoken
+pytest
+pytest-asyncio

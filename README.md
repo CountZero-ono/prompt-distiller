@@ -2,7 +2,6 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version" />
-  <img src="https://img.shields.io/badge/MCP-Server-4682B4?style=for-the-badge" alt="MCP Server" />
   <img src="https://img.shields.io/badge/Local%20AI-Qwen%2035B-6f42c1?style=for-the-badge" alt="Local AI" />
   <img src="https://img.shields.io/badge/Wayland-wtype-009688?style=for-the-badge" alt="wtype" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
@@ -22,7 +21,7 @@ Voice dictation and stream-of-consciousness typing produce messy prompts:
 - Spoken formatting: *"новая строка"*, *"абзац"*, *"new line"*
 - Long Cyrillic text that costs 2–3× more tokens in English-optimized models
 
-**Prompt Distiller** compresses all of this into a dense, precise English prompt — saving 50–75% tokens — and either injects it directly into the active window (voice workflow) or returns it to the calling agent (MCP workflow).
+**Prompt Distiller** compresses all of this into a dense, precise English prompt — saving 50–75% tokens — and injects it directly into the active window.
 
 ---
 
@@ -38,27 +37,24 @@ Voice dictation and stream-of-consciousness typing produce messy prompts:
 
 ## 🏗️ Architecture
 
-Two independent entry points — both hit the same distillation core:
-
 ```
-┌─────────────────────────────┐     ┌──────────────────────────────┐
-│  Shift+F4 (Voice Workflow)  │     │  MCP Tool (Agent Workflow)   │
-│                             │     │                              │
-│  pw-record → mic audio      │     │  Agent sees messy prompt     │
-│  Wyoming Whisper (10300)    │     │  calls distill_prompt tool   │
-│  → raw transcript           │     │  → gets clean English back   │
-└──────────────┬──────────────┘     └──────────────┬───────────────┘
-               │                                    │
-               ▼                                    ▼
+┌─────────────────────────────┐
+│  Shift+F4 (Voice Workflow)  │
+│                             │
+│  pw-record → mic audio      │
+│  Wyoming Whisper (10300)    │
+│  → raw transcript           │
+└──────────────┬──────────────┘
+               │
+               ▼
        ┌───────────────────────────────────────────────┐
        │          app/core/distiller.py                │
        │  PromptDistiller → Local Qwen 35B (port 1235) │
        └───────────────────────┬───────────────────────┘
                                │
                ┌───────────────┴────────────────┐
-               ▼                                ▼
-   wtype → injects into active window    Returns distilled prompt
-   (Antigravity / Hermes / any app)      to calling agent context
+               ▼
+   wtype/wl-copy → injects into active window
 ```
 
 ---
@@ -72,7 +68,6 @@ prompt-distiller/
 │   │   ├── distiller.py     # Distillation engine (PromptDistiller class)
 │   │   ├── models.py        # LLMClient + provider/model registry
 │   │   └── audio.py         # Audio transcription fallback (faster-whisper)
-│   └── mcp_server.py        # MCP stdio server exposing distill_prompt tool
 ├── scripts/
 │   └── dictate_distill.py   # Shift+F4 voice dictation → wtype injection
 ├── config.yaml              # Model configuration
@@ -117,7 +112,7 @@ Supports any OpenAI-compatible local server. For cloud providers, set `provider`
 ## 🎙️ Voice Dictation Setup (Shift+F4)
 
 2-press toggle workflow:
-- **Press 1 (Start):** Spawns `pw-record` → `/tmp/dictate_distill.wav`, writes PID to `/tmp/dictate_distill_recording.pid`
+- **Press 1 (Start):** Spawns `pw-record` → `~/.cache/prompt_distiller/recording.wav`, writes PID to `~/.cache/prompt_distiller/recording.pid`
 - **Press 2 (Stop & Process):** Kills `pw-record`, streams WAV to Wyoming Faster-Whisper on port 10300, distills via PromptDistiller, types result with `wtype`
 
 **Hyprland keybind (`~/.config/hypr/hyprland.conf`):**
@@ -128,56 +123,6 @@ bind = SHIFT, F4, exec, /path/to/prompt-distiller/venv/bin/python /path/to/promp
 **Wyoming Faster-Whisper** must be running on port 10300. If unavailable, the script falls back to a local `faster-whisper` Python call.
 
 ---
-
-## 🔌 MCP Integration
-
-The MCP server (`app/mcp_server.py`) exposes a single tool: `distill_prompt`.
-
-Agents call it when they detect a messy, Russian, or rambling prompt. The tool returns the distilled English version along with token savings metadata.
-
-### Google Antigravity (`~/.gemini/config/mcp_config.json`)
-```json
-{
-  "mcpServers": {
-    "prompt-distiller": {
-      "command": "/path/to/prompt-distiller/venv/bin/python",
-      "args": ["/path/to/prompt-distiller/app/mcp_server.py"]
-    }
-  }
-}
-```
-
-### OpenCode (`~/.opencode/opencode.json`)
-```json
-"mcp": {
-  "prompt-distiller": {
-    "command": ["/path/to/prompt-distiller/venv/bin/python", "/path/to/prompt-distiller/app/mcp_server.py"],
-    "enabled": true,
-    "type": "local"
-  }
-}
-```
-
-### Kilocode (`~/.kilocode/mcp.json`)
-```json
-{
-  "mcpServers": {
-    "prompt-distiller": {
-      "command": "/path/to/prompt-distiller/venv/bin/python",
-      "args": ["/path/to/prompt-distiller/app/mcp_server.py"]
-    }
-  }
-}
-```
-
-### Hermes Agent (`~/.hermes/config.yaml`)
-```yaml
-mcp_servers:
-  prompt-distiller:
-    command: /path/to/prompt-distiller/venv/bin/python
-    args:
-      - /path/to/prompt-distiller/app/mcp_server.py
-```
 
 ---
 

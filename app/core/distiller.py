@@ -3,6 +3,7 @@ import re
 import logging
 from typing import Dict, Any, Optional
 from app.core.models import LLMClient, MODEL_REGISTRY
+from app.core.config import Settings
 
 logger = logging.getLogger("prompt_distiller.distiller")
 
@@ -48,23 +49,27 @@ Maintain bullet points, step-by-step instructions, and technical clarity. Strip 
 
 
 class PromptDistiller:
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Settings):
         self.config = config
-        models_cfg = config.get("models", {})
-        self.default_distill_model = models_cfg.get("distillation_model", "gemini/gemini-2.0-flash")
-        self.default_exec_model = models_cfg.get("execution_model", "gemini/gemini-2.0-flash")
-        self.default_api_base = models_cfg.get("api_base")
-        self.default_provider = models_cfg.get("provider")
+        self.default_distill_model = config.models.distillation_model
+        self.default_exec_model = config.models.execution_model
+        self.default_api_base = config.models.api_base
+        self.default_provider = config.models.provider
 
     def estimate_tokens(self, text: str) -> int:
         """
-        Estimates token count considering Cyrillic script BPE overhead (~2.5 tokens/word for Russian, ~1.2 for English).
+        Estimates token count using tiktoken (fallback to heuristic).
         """
-        words = text.split()
-        cyrillic_chars = sum(1 for c in text if '\u0400' <= c <= '\u04FF')
-        if cyrillic_chars > len(text) * 0.2:
-            return int(len(words) * 2.5) + 5
-        return int(len(words) * 1.3) + 2
+        try:
+            import tiktoken
+            enc = tiktoken.get_encoding("cl100k_base")
+            return len(enc.encode(text))
+        except ImportError:
+            words = text.split()
+            cyrillic_chars = sum(1 for c in text if '\u0400' <= c <= '\u04FF')
+            if cyrillic_chars > len(text) * 0.2:
+                return int(len(words) * 2.5) + 5
+            return int(len(words) * 1.3) + 2
 
     async def _run_distillation(
         self,
@@ -127,16 +132,8 @@ class PromptDistiller:
         active_provider = provider or self.default_provider
         active_api_base = api_base or self.default_api_base
 
-        if active_provider and active_provider in MODEL_REGISTRY:
-            p_info = MODEL_REGISTRY[active_provider]
-            fallback_distill = p_info.get("distillation_default", self.default_distill_model)
-            fallback_exec = p_info.get("execution_default", self.default_exec_model)
-        else:
-            fallback_distill = self.default_distill_model
-            fallback_exec = self.default_exec_model
-
-        distill_model_name = distillation_model or fallback_distill
-        exec_model_name = execution_model or fallback_exec
+        distill_model_name = distillation_model or self.default_distill_model
+        exec_model_name = execution_model or self.default_exec_model
 
         distiller_client = LLMClient(
             model_name=distill_model_name,
@@ -197,11 +194,7 @@ class PromptDistiller:
         active_provider = provider or self.default_provider
         active_api_base = api_base or self.default_api_base
 
-        fallback_distill = self.default_distill_model
-        if active_provider and active_provider in MODEL_REGISTRY:
-            fallback_distill = MODEL_REGISTRY[active_provider].get("distillation_default", self.default_distill_model)
-
-        distill_model_name = distillation_model or fallback_distill
+        distill_model_name = distillation_model or self.default_distill_model
         distiller_client = LLMClient(
             model_name=distill_model_name,
             api_key=api_key,

@@ -3,18 +3,9 @@
 ## Overview
 This repository is the **Prompt Distiller**, a lightweight middleware tool that compresses messy human prompts and STT voice dictations (Russian, English, or mixed) into high-potency micro-prompts for reasoning LLMs.
 
-## Architecture — Two Entry Points
+## Architecture
 
-### 1. Voice Dictation (`scripts/dictate_distill.py`)
-- Triggered by `Shift+F4` keybind in Hyprland
-- **Press 1 (Start):** Spawns `pw-record` → `/tmp/dictate_distill.wav`, PID file → `/tmp/dictate_distill_recording.pid`
-- **Press 2 (Stop & Process):** Kills `pw-record`, streams WAV to Wyoming Faster-Whisper on `127.0.0.1:10300`, distills raw transcript via `PromptDistiller`, injects result into focused window via `wtype`
-- Falls back to direct `PromptDistiller` Python import if HTTP server is unavailable
-
-### 2. MCP Tool (`app/mcp_server.py`)
-- Exposes `distill_prompt` tool over stdio JSON-RPC to Antigravity, OpenCode, Kilocode, and Hermes
-- Agents call this tool when they detect a messy, rambling, or Russian prompt — agent decides autonomously when to distill
-- Works on both STT-dictated and typed text
+### Voice Dictation (`scripts/dictate_distill.py`)
 
 ## Core Modules
 - `app/core/distiller.py` — `PromptDistiller` class with `distill_only()` method; shared by both entry points
