@@ -67,10 +67,15 @@ prompt-distiller/
 │   ├── core/
 │   │   ├── distiller.py     # Distillation engine (PromptDistiller class)
 │   │   ├── models.py        # LLMClient + provider/model registry
-│   │   └── audio.py         # Audio transcription fallback (faster-whisper)
+│   │   ├── audio.py         # Audio transcription fallback (faster-whisper)
+│   │   └── config.py        # Pydantic settings loader
 ├── scripts/
 │   └── dictate_distill.py   # Shift+F4 voice dictation → wtype injection
+├── tests/
+│   └── test_distiller.py    # Unit tests and regression suite
+├── CHANGELOG.md
 ├── config.yaml              # Model configuration
+├── pyproject.toml
 └── requirements.txt
 ```
 
@@ -121,8 +126,6 @@ bind = SHIFT, F4, exec, /path/to/prompt-distiller/venv/bin/python /path/to/promp
 ```
 
 **Wyoming Faster-Whisper** must be running on port 10300. If unavailable, the script falls back to a local `faster-whisper` Python call.
-
----
 
 ---
 
