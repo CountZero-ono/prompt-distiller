@@ -1,11 +1,11 @@
 # Prompt Distiller Configuration
 
-# Connected to local Qwen 35B server on port 1235
+# Connected to BAMA Unified Inference Gateway on Jasper Lake with local Qwen fallback
 models:
   provider: "local"
-  api_base: "http://127.0.0.1:1235/v1"
-  distillation_model: "qwen3.6-35b-a3b-mtp@iq2_m"
-  execution_model: "qwen3.6-35b-a3b-mtp@iq2_m"
+  api_base: "http://192.168.1.37:8090/v1"
+  distillation_model: "qwen3.6-35b-a3b-mtp@iq3_s"
+  execution_model: "qwen3.6-35b-a3b-mtp@iq3_s"
 
 # Distillation behaviour
 distillation:

@@ -188,34 +188,39 @@ class LLMClient:
         # accidentally routing cloud requests to 127.0.0.1:1235.
         local_api_base = self.api_base
         if not is_cloud and not local_api_base:
-            local_api_base = os.getenv("LLM_API_BASE", "http://127.0.0.1:1235/v1")
+            local_api_base = os.getenv("LLM_API_BASE", "http://192.168.1.37:8090/v1")
 
         if local_api_base:
-            endpoint = local_api_base.rstrip("/")
-            if not endpoint.endswith("/chat/completions"):
-                endpoint += "/chat/completions"
-            try:
-                import httpx
-                payload = {
-                    "model": self.model_name or "qwen",
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
-                    "temperature": 0.2
-                }
-                if response_format == "json":
-                    payload["response_format"] = {"type": "json_object"}
+            candidate_bases = [local_api_base]
+            if "127.0.0.1:1235" not in local_api_base and "localhost:1235" not in local_api_base:
+                candidate_bases.append("http://127.0.0.1:1235/v1")
 
-                async with httpx.AsyncClient(timeout=120.0) as client:
-                    resp = await client.post(endpoint, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        content = data["choices"][0]["message"]["content"]
-                        if content and content.strip():
-                            return content
-            except Exception as e:
-                logger.warning(f"Local HTTP LLM call to {endpoint} failed: {e}. Trying litellm/fallback...")
+            for base_url in candidate_bases:
+                endpoint = base_url.rstrip("/")
+                if not endpoint.endswith("/chat/completions"):
+                    endpoint += "/chat/completions"
+                try:
+                    import httpx
+                    payload = {
+                        "model": self.model_name or "qwen",
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        "temperature": 0.2
+                    }
+                    if response_format == "json":
+                        payload["response_format"] = {"type": "json_object"}
+
+                    async with httpx.AsyncClient(timeout=45.0) as client:
+                        resp = await client.post(endpoint, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            content = data["choices"][0]["message"]["content"]
+                            if content and content.strip():
+                                return content
+                except Exception as e:
+                    logger.warning(f"HTTP LLM call to {endpoint} failed: {e}. Trying next candidate...")
 
         # 2. Try LiteLLM if API key or external provider configured
         try:
