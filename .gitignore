@@ -16,3 +16,8 @@ ENV/
 .DS_Store
 .vscode/
 .idea/
+
+# Search & Analysis Indexes
+.zvec-grep/
+graphify-out/
+*.jsonl

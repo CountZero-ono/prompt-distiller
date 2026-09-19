@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2026-08-13
+## [Unreleased] - 2026-09-19
+
+### Fixed
+- Fixed cloud provider routing bug in `app/core/models.py` where cloud requests inadvertently attempted direct HTTP calls to local endpoints before reaching LiteLLM.
+
+### Changed
+- Added `.zvec-grep/`, `graphify-out/`, and `*.jsonl` to `.gitignore` to prevent search indexes and AST artifacts from being committed.
+
+## [0.2.0] - 2026-08-13
 
 ### Added
 - Added `pydantic` and `pydantic-settings` to ensure strict parsing of `config.yaml`.

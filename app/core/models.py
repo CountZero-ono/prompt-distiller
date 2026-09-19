@@ -190,7 +190,7 @@ class LLMClient:
         if not is_cloud and not local_api_base:
             local_api_base = os.getenv("LLM_API_BASE", "http://192.168.1.37:8090/v1")
 
-        if local_api_base:
+        if local_api_base and not is_cloud:
             candidate_bases = [local_api_base]
             if "127.0.0.1:1235" not in local_api_base and "localhost:1235" not in local_api_base:
                 candidate_bases.append("http://127.0.0.1:1235/v1")
